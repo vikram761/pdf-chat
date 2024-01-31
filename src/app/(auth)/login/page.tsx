@@ -21,7 +21,7 @@ import { useEffect } from "react";
 
 const formSchema = z.object({
   email: z.string(),
-  password: z.string().min(8),
+  password: z.string(),
 });
 
 export default function Home() {
@@ -113,16 +113,16 @@ export default function Home() {
               </Link>
             </p>
             <hr className="" />
-            <Button
-              className="flex gap-2 justify-center w-full"
-              onClick={() => {
-                signIn("github").catch((err) => console.error(err));
-              }}
-            >
-              <FaGithub />
-              Sign In with Github
-            </Button>
           </form>
+          <Button
+            className="flex gap-2 justify-center w-full"
+            onClick={() => {
+              signIn("github").catch((err) => console.error(err));
+            }}
+          >
+            <FaGithub />
+            Sign In with Github
+          </Button>
         </Form>
       </div>
     </div>

@@ -6,46 +6,57 @@ import { IoMdCloudUpload } from "react-icons/io";
 import { FaRegFileAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { error } from "console";
+import { useUploadThing as useUploadThing } from "@/lib/uploadthing";
+import { useToast } from "./ui/use-toast";
+import { trpc } from "@/app/_trpc/client";
 
 interface FiledropWrapperProps {}
 
 const FiledropWrapper: FC<FiledropWrapperProps> = ({}) => {
-  const [file, setFile] = useState<File | null>(null);
-  const [canUpload, setCanUpload] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
+
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const router = useRouter();
+  const { startUpload } = useUploadThing("pdfUploader");
+  const { toast } = useToast();
 
-  const handleClick = async () => {
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        console.log("file uploaded");
-      } else {
-        throw new Error("upload failed");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const { mutate: startPolling } = trpc.getFile.useMutation({
+    onSuccess: (file) => {
+      router.push(`/chat/${file.id}`);
+    },
+    retry: true,
+    retryDelay: 500,
+  });
 
   return (
     <div>
       <Dropzone
         multiple={false}
-        onDrop={(acceptedFiles) => {
-          setFile(acceptedFiles[0]);
-          setCanUpload(true);
-        }}
-        onDropRejected={() => {
-          setCanUpload(false);
+        onDrop={async (acceptedFiles) => {
+          setIsUploading(true);
+
+          const res = await startUpload(acceptedFiles);
+          if (!res) {
+            return toast({
+              title: "Somethig went wrong!",
+              description: "please try again",
+              variant: "destructive",
+            });
+          }
+
+          const [fileResponse] = res;
+          const key = fileResponse?.key;
+          if (!key) {
+            return toast({
+              title: "Somethig went wrong!",
+              description: "please try again",
+              variant: "destructive",
+            });
+          }
+
+          startPolling({ key });
+          setIsUploading(false);
         }}
       >
         {({ getRootProps, getInputProps, acceptedFiles }) => (
@@ -54,7 +65,7 @@ const FiledropWrapper: FC<FiledropWrapperProps> = ({}) => {
               {...getRootProps()}
               className="bg-slate-50 max-w-2xl w-full shadow-lg h-60 flex items-center justify-center border rounded-md hover:bg-slate-100 "
             >
-              <input {...getInputProps()} />
+              <input {...getInputProps()} type="file" />
               <div className="flex-col gap-3 items-center justify-center pt-5 pb-6">
                 <div className="w-full flex justify-center">
                   <IoMdCloudUpload className="text-slate-400 h-16 w-16" />
@@ -83,15 +94,22 @@ const FiledropWrapper: FC<FiledropWrapperProps> = ({}) => {
           </section>
         )}
       </Dropzone>
-      <div className="w-full flex justify-center mt-8">
-        <Button
-          className="px-6 py-4 disabled:bg-gray-400"
-          disabled={!canUpload}
-          onClick={handleClick}
-        >
-          Upload files
-        </Button>
-      </div>
+      {isUploading == true ? (
+        <div className=" flex flex-col mt-4">
+          <div className="flex flex-auto flex-col justify-center items-center p-4 md:p-5">
+            <div className="flex gap-2 justify-center">
+              <div
+                className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full dark:text-blue-500"
+                role="status"
+                aria-label="loading"
+              >
+                <span className="sr-only">Loading...</span>
+              </div>
+              <p>loading your document</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
