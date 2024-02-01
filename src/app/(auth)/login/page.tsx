@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FaGithub } from "react-icons/fa";
 import { useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
   email: z.string(),
@@ -27,6 +28,7 @@ const formSchema = z.object({
 export default function Home() {
   const router = useRouter();
   const session = useSession();
+  const { toast } = useToast();
 
   if (session?.status === "authenticated") {
     router.push("/upload");
@@ -45,13 +47,21 @@ export default function Home() {
       email: values.email,
       password: values.password,
       redirect: false,
-    })
-      .then(() => {
-        alert("user is logged in");
-        setTimeout(() => {}, 5000);
-        router.push("/");
-      })
-      .catch((err) => console.error(err));
+    }).then((callback) => {
+      if (callback?.error) {
+        toast({
+          title: "Ugh Something wrong happend",
+          description: "try again",
+        });
+      }
+
+      if (callback?.ok && !callback.error) {
+        toast({
+          title: "User logged in succcessfully",
+        });
+        router.push("/upload");
+      }
+    });
   };
 
   return (
@@ -112,17 +122,7 @@ export default function Home() {
                 Register
               </Link>
             </p>
-            <hr className="" />
           </form>
-          <Button
-            className="flex gap-2 justify-center w-full"
-            onClick={() => {
-              signIn("github").catch((err) => console.error(err));
-            }}
-          >
-            <FaGithub />
-            Sign In with Github
-          </Button>
         </Form>
       </div>
     </div>

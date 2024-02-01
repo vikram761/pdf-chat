@@ -75,6 +75,6 @@ model Message {
   updatedAt DateTime @updatedAt
   User      User?    @relation(fields: [userId], references: [id])
   userId    String?
-  File      File?    @relation(fields: [fileId], references: [id])
-  fileId    String?
+  File      File?    @relation(fields: [fileId], references: [id] , onDelete: Cascade)
+  fileId    String
 }

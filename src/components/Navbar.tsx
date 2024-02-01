@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { FC } from "react";
 import { Button } from "./ui/button";
+import { signOut } from "next-auth/react";
+import LogoutButton from "./LogoutButton";
 
 interface NavbarProps {}
 
@@ -32,9 +34,7 @@ const Navbar: FC<NavbarProps> = ({}) => {
           </div>
         </div>
         <div>
-          <Button variant={"outline"} className="px-6 border-2  ">
-            LOGIN
-          </Button>
+          <LogoutButton />
         </div>
       </div>
     </div>
